@@ -48,24 +48,24 @@ KERNEL_DIR="$(pwd)"
 BASEDIR="$(basename "$KERNEL_DIR")"
 
 # The name of the Kernel, to name the ZIP
-ZIPNAME="azure"
+ZIPNAME="$KERNEL_NAME"
 
 # Build Author
 # Take care, it should be a universal and most probably, case-sensitive
-AUTHOR="Panchajanya1999"
+AUTHOR="cbendot"
 
 # Architecture
 ARCH=arm64
 
 # The name of the device for which the kernel is built
-MODEL="Redmi Note 7 Pro"
+MODEL="Zenfone Max Pro M1"
 
 # The codename of the device
-DEVICE="violet"
+DEVICE="$DEVICE_CODENAME"
 
 # The defconfig which should be used. Get it from config.gz from
 # your device or check source
-DEFCONFIG=vendor/violet-perf_defconfig
+DEFCONFIG=$DEVICE_DEFCONFIG
 
 # Specify compiler. 
 # 'clang' or 'gcc'
@@ -86,7 +86,7 @@ PTTG=1
 	if [ $PTTG = 1 ]
 	then
 		# Set Telegram Chat ID
-		CHATID="-1001231303646"
+		CHATID="TG_CHAT_ID"
 	fi
 
 # Generate a full DEFCONFIG prior building. 1 is YES | 0 is NO(default)
@@ -97,7 +97,7 @@ FILES=Image.gz-dtb
 
 # Build dtbo.img (select this only if your source has support to building dtbo.img)
 # 1 is YES | 0 is NO(default)
-BUILD_DTBO=1
+BUILD_DTBO=0
 	if [ $BUILD_DTBO = 1 ]
 	then 
 		# Set this to your dtbo path. 
@@ -174,7 +174,7 @@ KERVER=$(make kernelversion)
 COMMIT_HEAD=$(git log --oneline -1)
 
 # Set Date 
-DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
+DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 
 #Now Its time for other stuffs like cloning, exporting, etc
 
@@ -183,18 +183,22 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 	if [ $COMPILER = "gcc" ]
 	then
 		msg "|| Cloning GCC 9.3.0 baremetal ||"
+		git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git gcc64
 		git clone --depth=1 https://github.com/arter97/arm32-gcc.git gcc32
-		GCC64_DIR=$KERNEL_DIR/gcc64
-		GCC32_DIR=$KERNEL_DIR/gcc32
+		KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
+		GCC64_DIR=$(pwd)/gcc64
+		GCC32_DIR=$(pwd)/gcc32
 	fi
 	
 	if [ $COMPILER = "clang" ]
 	then
-		msg "|| Cloning Clang-14 ||"
-		git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang-llvm
+		msg "|| Cloning Clang-15 ||"
+		git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
+		git clone --depth=1 https://gitlab.com/ben863/azure-clang.git clang-llvm		
 		# Toolchain Directory defaults to clang-llvm
-		TC_DIR=$KERNEL_DIR/clang-llvm
+		KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
+		TC_DIR=$(pwd)/clang-llvm
 	fi
 
 	msg "|| Cloning Anykernel ||"
@@ -223,8 +227,8 @@ exports() {
 		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
 	fi
 
-	BOT_MSG_URL="https://api.telegram.org/bot$token/sendMessage"
-	BOT_BUILD_URL="https://api.telegram.org/bot$token/sendDocument"
+	BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
+	BOT_BUILD_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
 	PROCS=$(nproc --all)
 
 	export KBUILD_BUILD_USER ARCH SUBARCH PATH \
@@ -235,7 +239,7 @@ exports() {
 ##---------------------------------------------------------##
 
 tg_post_msg() {
-	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$CHATID" \
+	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$TG_CHAT_ID" \
 	-d "disable_web_page_preview=true" \
 	-d "parse_mode=html" \
 	-d text="$1"
@@ -250,7 +254,7 @@ tg_post_build() {
 
 	#Show the Checksum alongwith caption
 	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
-	-F chat_id="$CHATID"  \
+	-F chat_id="$TG_CHAT_ID"  \
 	-F "disable_web_page_preview=true" \
 	-F "parse_mode=Markdown" \
 	-F caption="$2 | *MD5 Checksum : *\`$MD5CHECK\`"
@@ -273,6 +277,7 @@ build_kernel() {
 	make O=out $DEFCONFIG
 	if [ $DEF_REG = 1 ]
 	then
+		cd $KERNEL_DIR
 		cp .config arch/arm64/configs/$DEFCONFIG
 		git add arch/arm64/configs/$DEFCONFIG
 		git commit -m "$DEFCONFIG: Regenerate
@@ -284,28 +289,30 @@ build_kernel() {
 	
 	if [ $COMPILER = "clang" ]
 	then
+		cd ${KERNEL_DIR}
 		MAKE+=(
-			CROSS_COMPILE=aarch64-linux-gnu- \
-			CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
 			CC=clang \
 			AR=llvm-ar \
 			OBJDUMP=llvm-objdump \
 			STRIP=llvm-strip \
 			NM=llvm-nm \
-			OBJCOPY=llvm-objcopy \
-			LD="$LINKER"
+			OBJCOPY=llvm-objcopy
+			CROSS_COMPILE=aarch64-linux-gnu- \
+			CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+			# LD="$LINKER"
 		)
 	elif [ $COMPILER = "gcc" ]
 	then
+		cd ${KERNEL_DIR}
 		MAKE+=(
-			CROSS_COMPILE_ARM32=arm-eabi- \
-			CROSS_COMPILE=aarch64-elf- \
 			AR=aarch64-elf-ar \
 			OBJDUMP=aarch64-elf-objdump \
 			STRIP=aarch64-elf-strip \
 			NM=aarch64-elf-nm \
 			OBJCOPY=aarch64-elf-objcopy \
-			LD=aarch64-elf-$LINKER
+			CROSS_COMPILE=aarch64-elf- \			
+			CROSS_COMPILE_ARM32=arm-eabi-
+			# LD=aarch64-elf-$LINKER
 		)
 	fi
 	
