@@ -18,8 +18,10 @@
  # limitations under the License.
  #
 
-#Kernel building script
+echo "|| Downloading few Dependecies . . .||"
+#Kernel Sources
 git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
+KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
 
 # Bail out if script fails
 set -e
@@ -186,7 +188,6 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 		msg "|| Cloning GCC 9.3.0 baremetal ||"		
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git gcc64
 		git clone --depth=1 https://github.com/arter97/arm32-gcc.git gcc32
-		KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
 		GCC64_DIR=$(pwd)/gcc64
 		GCC32_DIR=$(pwd)/gcc32
 	fi
@@ -196,7 +197,6 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 		msg "|| Cloning Clang-15 ||"		
 		git clone --depth=1 https://gitlab.com/ben863/azure-clang.git clang-llvm		
 		# Toolchain Directory defaults to clang-llvm
-		KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
 		TC_DIR=$(pwd)/clang-llvm
 	fi
 
