@@ -19,6 +19,7 @@
  #
 
 #Kernel building script
+git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
 
 # Bail out if script fails
 set -e
@@ -182,8 +183,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 	echo " "
 	if [ $COMPILER = "gcc" ]
 	then
-		msg "|| Cloning GCC 9.3.0 baremetal ||"
-		git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
+		msg "|| Cloning GCC 9.3.0 baremetal ||"		
 		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git gcc64
 		git clone --depth=1 https://github.com/arter97/arm32-gcc.git gcc32
 		KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
@@ -193,8 +193,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 	
 	if [ $COMPILER = "clang" ]
 	then
-		msg "|| Cloning Clang-15 ||"
-		git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
+		msg "|| Cloning Clang-15 ||"		
 		git clone --depth=1 https://gitlab.com/ben863/azure-clang.git clang-llvm		
 		# Toolchain Directory defaults to clang-llvm
 		KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
