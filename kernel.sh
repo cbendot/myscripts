@@ -21,7 +21,6 @@
 echo "|| Downloading few Dependecies . . .||"
 #Kernel Sources
 git clone --depth=1 $KERNEL_SOURCE -b hmp $DEVICE_CODENAME
-KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
 
 # Bail out if script fails
 set -e
@@ -47,7 +46,7 @@ cdir() {
 ##----------Basic Informations, COMPULSORY--------------##
 
 # The defult directory where the kernel should be placed
-KERNEL_DIR="$(pwd)"
+KERNEL_DIR=$(pwd)/$DEVICE_CODENAME
 BASEDIR="$(basename "$KERNEL_DIR")"
 
 # The name of the Kernel, to name the ZIP
